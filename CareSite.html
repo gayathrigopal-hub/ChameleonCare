@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChameleonCare — Smart Bandage Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green: #3A8C4E;
+    --green-light: #52B86B;
+    --green-pale: #EBF7EE;
+    --green-deep: #246136;
+    --amber: #D4870C;
+    --cream: #FAFDF8;
+    --charcoal: #1A1E1A;
+    --mid: #4A5A4A;
+    --soft: #8A9E8A;
+    --border: #D6E8D6;
+    --green-ok: #2D7A4F;
+    --green-bg: #E8F5EE;
+    --amber-warn: #C47D0A;
+    --amber-bg: #FEF3D6;
+    --red-alert: #C0392B;
+    --red-bg: #FDECEA;
+    --radius: 16px;
+    --shadow: 0 4px 32px rgba(26,30,26,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--charcoal); min-height: 100vh; }
+
+  /* HEADER */
+  .header {
+    background: var(--charcoal);
+    padding: 14px 28px;
+    display: flex; align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 100;
+    border-bottom: 2px solid var(--green-deep);
+  }
+  .header-logo { height: 46px; width: 46px; object-fit: contain; }
+  .header-brand { display: flex; flex-direction: column; }
+  .header-brand h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 20px; color: #fff; font-weight: 700; letter-spacing: -0.3px; line-height: 1;
+  }
+  .header-brand span { font-size: 11px; color: var(--soft); letter-spacing: 0.8px; text-transform: uppercase; margin-top: 2px; }
+  .header-actions { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+  .btn-tab {
+    padding: 8px 16px; border-radius: 8px; font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s;
+  }
+  .btn-tab.ghost { background: transparent; color: var(--soft); border: 1.5px solid #3A3F3A; }
+  .btn-tab.ghost:hover, .btn-tab.ghost.active { background: var(--green-deep); color: #fff; border-color: var(--green-deep); }
+  .btn-tab.primary { background: var(--green); color: #fff; }
+  .btn-tab.primary:hover { background: var(--green-light); }
+
+  /* CONTAINER */
+  .container { max-width: 680px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  /* PAGE SECTIONS */
+  .page { display: none; animation: fadeUp 0.35s ease both; }
+  .page.active { display: block; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* HERO */
+  .hero { text-align: center; margin-bottom: 36px; }
+  .hero-badge {
+    display: inline-block; background: var(--green-pale); color: var(--green-deep);
+    font-size: 11px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase;
+    padding: 6px 14px; border-radius: 20px; border: 1px solid #B2D9BA; margin-bottom: 18px;
+  }
+  .hero h2 { font-family: 'Fraunces', serif; font-size: clamp(26px, 5.5vw, 40px); font-weight: 700; line-height: 1.15; margin-bottom: 14px; }
+  .hero h2 span { color: var(--green); }
+  .hero p { color: var(--mid); font-size: 15px; line-height: 1.7; max-width: 480px; margin: 0 auto; }
+
+  /* PROGRESS */
+  .progress-wrap { margin-bottom: 28px; }
+  .progress-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--soft); margin-bottom: 7px; }
+  .progress-bar-bg { height: 6px; background: #D6E8D6; border-radius: 99px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--green-light), var(--green-deep)); border-radius: 99px; transition: width 0.5s cubic-bezier(.4,0,.2,1); width: 0%; }
+
+  /* CARDS */
+  .card {
+    background: #fff; border-radius: var(--radius); padding: 30px 28px;
+    box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 18px;
+  }
+  .section-label { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--green); margin-bottom: 8px; }
+  .question-title { font-family: 'Fraunces', serif; font-size: 19px; font-weight: 600; line-height: 1.35; margin-bottom: 6px; }
+  .question-hint { font-size: 13px; color: var(--soft); margin-bottom: 20px; line-height: 1.5; }
+
+  /* OPTIONS */
+  .options { display: flex; flex-direction: column; gap: 9px; }
+  .option {
+    display: flex; align-items: center; gap: 13px; padding: 13px 16px;
+    border: 2px solid var(--border); border-radius: 10px; cursor: pointer;
+    transition: all 0.2s; background: var(--cream); font-size: 14px; color: var(--charcoal);
+    text-align: left;
+  }
+  .option:hover { border-color: var(--green-light); background: var(--green-pale); }
+  .option.selected { border-color: var(--green); background: var(--green-pale); font-weight: 500; }
+  .option-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #B2C8B2; flex-shrink: 0; position: relative; transition: all 0.2s; }
+  .option.selected .option-dot { background: var(--green); border-color: var(--green); }
+  .option.selected .option-dot::after { content: ''; width: 6px; height: 6px; background: #fff; border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+  .color-swatch { width: 26px; height: 26px; border-radius: 6px; flex-shrink: 0; border: 2px solid rgba(0,0,0,0.1); }
+  .option-check { width: 18px; height: 18px; border-radius: 5px; border: 2px solid #B2C8B2; flex-shrink: 0; position: relative; transition: all 0.2s; }
+  .option.selected .option-check { background: var(--green); border-color: var(--green); }
+  .option.selected .option-check::after { content: '✓'; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); color: #fff; font-size: 11px; font-weight: 700; }
+
+  /* SCALE */
+  .scale-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .scale-btn {
+    flex: 1; min-width: 40px; padding: 11px 4px; border: 2px solid var(--border); border-radius: 9px;
+    background: var(--cream); cursor: pointer; font-size: 15px; font-weight: 600; color: var(--mid);
+    transition: all 0.2s; text-align: center; font-family: 'DM Sans', sans-serif;
+  }
+  .scale-btn:hover { border-color: var(--green-light); background: var(--green-pale); }
+  .scale-btn.selected { border-color: var(--green); background: var(--green); color: #fff; }
+  .scale-labels { display: flex; justify-content: space-between; font-size: 11px; color: var(--soft); margin-top: 7px; }
+
+  /* TEXTAREA */
+  textarea {
+    width: 100%; border: 2px solid var(--border); border-radius: 10px; padding: 13px 15px;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--charcoal); background: var(--cream);
+    resize: vertical; min-height: 110px; line-height: 1.6; outline: none; transition: border 0.2s;
+  }
+  textarea:focus { border-color: var(--green); background: #fff; }
+
+  /* EMAIL INPUT */
+  .email-wrap { position: relative; }
+  .email-wrap input {
+    width: 100%; border: 2px solid var(--border); border-radius: 10px;
+    padding: 13px 15px 13px 46px; font-family: 'DM Sans', sans-serif; font-size: 14px;
+    color: var(--charcoal); background: var(--cream); outline: none; transition: border 0.2s;
+  }
+  .email-wrap input:focus { border-color: var(--green); background: #fff; }
+  .email-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); font-size: 17px; pointer-events: none; }
+
+  /* NAV BUTTONS */
+  .nav-buttons { display: flex; gap: 10px; margin-top: 24px; }
+  .btn-back { padding: 13px 22px; border: 2px solid var(--border); border-radius: 10px; background: transparent; cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; color: var(--mid); transition: all 0.2s; }
+  .btn-back:hover { border-color: var(--green-light); color: var(--charcoal); }
+  .btn-next {
+    flex: 1; padding: 13px 22px; border: none; border-radius: 10px;
+    background: linear-gradient(135deg, var(--green-light), var(--green-deep)); cursor: pointer;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; color: #fff;
+    transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 4px 14px rgba(58,140,78,0.3);
+  }
+  .btn-next:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(58,140,78,0.4); }
+  .btn-next:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* STEP DOTS */
+  .step-dots { display: flex; justify-content: center; gap: 7px; margin-bottom: 28px; }
+  .step-dot { width: 7px; height: 7px; border-radius: 50%; background: #C8DACC; transition: all 0.3s; }
+  .step-dot.active { background: var(--green); width: 22px; border-radius: 4px; }
+  .step-dot.done { background: var(--green-light); }
+
+  /* RESULT */
+  .result-card { border-radius: var(--radius); padding: 36px 28px; text-align: center; border: 2px solid; }
+  .result-card.green { background: var(--green-bg); border-color: var(--green-ok); }
+  .result-card.amber { background: var(--amber-bg); border-color: var(--amber-warn); }
+  .result-card.red { background: var(--red-bg); border-color: var(--red-alert); }
+  .result-icon { font-size: 52px; margin-bottom: 14px; }
+  .result-title { font-family: 'Fraunces', serif; font-size: 26px; font-weight: 700; margin-bottom: 10px; }
+  .result-card.green .result-title { color: var(--green-ok); }
+  .result-card.amber .result-title { color: var(--amber-warn); }
+  .result-card.red .result-title { color: var(--red-alert); }
+  .result-msg { font-size: 15px; line-height: 1.7; color: var(--mid); margin-bottom: 20px; }
+  .result-tips { text-align: left; background: rgba(255,255,255,0.65); border-radius: 10px; padding: 16px 18px; margin-bottom: 20px; }
+  .result-tips h4 { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 9px; color: var(--charcoal); }
+  .result-tips li { font-size: 13px; line-height: 1.65; color: var(--mid); margin-left: 17px; margin-bottom: 4px; }
+  .result-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 20px; }
+  .btn-restart { padding: 13px 26px; background: var(--charcoal); color: var(--cream); border: none; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .btn-restart:hover { background: var(--green-deep); }
+  .btn-viewlog { padding: 13px 26px; background: transparent; color: var(--green); border: 2px solid var(--green); border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .btn-viewlog:hover { background: var(--green-pale); }
+
+  /* VALIDATION */
+  .val-err { color: var(--red-alert); font-size: 12px; margin-top: 7px; display: none; }
+
+  /* HISTORY / LOGIN PAGE */
+  .history-header { text-align: center; margin-bottom: 32px; }
+  .history-header h2 { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+  .history-header p { color: var(--mid); font-size: 14px; line-height: 1.6; }
+
+  .login-card { background: #fff; border-radius: var(--radius); padding: 32px 28px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+  .login-card h3 { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+  .login-card p { font-size: 13px; color: var(--soft); margin-bottom: 22px; }
+
+  .log-entry {
+    background: #fff; border-radius: 12px; padding: 18px 20px;
+    border: 1px solid var(--border); margin-bottom: 12px; box-shadow: 0 2px 10px rgba(26,30,26,0.06);
+    display: flex; align-items: center; gap: 16px;
+  }
+  .log-entry-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+  .log-entry-dot.green { background: var(--green-ok); }
+  .log-entry-dot.amber { background: var(--amber-warn); }
+  .log-entry-dot.red { background: var(--red-alert); }
+  .log-entry-body { flex: 1; }
+  .log-entry-date { font-size: 12px; color: var(--soft); margin-bottom: 3px; }
+  .log-entry-title { font-size: 14px; font-weight: 600; }
+  .log-entry-title.green { color: var(--green-ok); }
+  .log-entry-title.amber { color: var(--amber-warn); }
+  .log-entry-title.red { color: var(--red-alert); }
+  .log-entry-score { font-size: 12px; color: var(--soft); }
+  .log-expand-btn { font-size: 18px; cursor: pointer; color: var(--soft); background: none; border: none; }
+  .log-detail { display: none; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; color: var(--mid); line-height: 1.7; }
+  .log-detail.open { display: block; }
+  .log-detail dl { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; }
+  .log-detail dt { font-weight: 600; color: var(--charcoal); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .log-detail dd { color: var(--mid); }
+
+  .empty-state { text-align: center; padding: 52px 20px; color: var(--soft); }
+  .empty-state .es-icon { font-size: 48px; margin-bottom: 14px; }
+  .empty-state p { font-size: 14px; line-height: 1.7; max-width: 320px; margin: 0 auto; }
+
+  .notice-box { background: var(--green-pale); border: 1px solid #B2D9BA; border-radius: 10px; padding: 14px 16px; font-size: 13px; color: var(--green-deep); margin-bottom: 20px; line-height: 1.6; }
+  .notice-box strong { display: block; margin-bottom: 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* INTRO CARD */
+  .intro-card { background: #fff; border-radius: var(--radius); padding: 32px 28px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+  .intro-features { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0; }
+  .intro-feat { background: var(--cream); border: 1px solid var(--border); border-radius: 10px; padding: 13px; font-size: 13px; color: var(--mid); display: flex; gap: 9px; align-items: flex-start; }
+  .intro-feat-icon { font-size: 19px; flex-shrink: 0; }
+
+  @media (max-width: 520px) {
+    .container { padding: 24px 14px 60px; }
+    .card, .intro-card, .login-card { padding: 22px 16px; }
+    .intro-features { grid-template-columns: 1fr; }
+    .header { padding: 12px 16px; }
+    .header-brand span { display: none; }
+    .log-detail dl { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <img class="header-logo" src="data:image/jpeg;base64,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" alt="ChameleonCare Logo">
+  <div class="header-brand">
+    <h1>ChameleonCare</h1>
+    <span>Smart Bandage Monitor</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn-tab ghost" id="tab-survey" onclick="showPage('survey-landing')" >Daily Check-in</button>
+    <button class="btn-tab ghost" id="tab-history" onclick="showPage('history')">View History</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- ══════════════ SURVEY LANDING ══════════════ -->
+  <div id="survey-landing" class="page active">
+    <div class="hero">
+      <div class="hero-badge">🔬 Daily Wound Monitoring</div>
+      <h2>How Is Your <span>Wound Healing</span> Today?</h2>
+      <p>Your ChameleonCare turmeric bandage changes color to detect infection. Complete this quick check-in for instant guidance.</p>
+    </div>
+    <div class="intro-card">
+      <div class="intro-features">
+        <div class="intro-feat"><span class="intro-feat-icon">🎨</span><span>Color-coded bandage infection detection</span></div>
+        <div class="intro-feat"><span class="intro-feat-icon">📊</span><span>Daily symptom tracking & history</span></div>
+        <div class="intro-feat"><span class="intro-feat-icon">🩺</span><span>Instant personalised medical guidance</span></div>
+        <div class="intro-feat"><span class="intro-feat-icon">📧</span><span>Logs saved and viewable by email</span></div>
+      </div>
+      <div class="notice-box">
+        <strong>📋 How are logs stored?</strong>
+        Your daily results are saved securely in your browser using local storage, linked to your email address. To view past entries, go to <strong>View History</strong> and sign in with the same email you use for check-ins.
+      </div>
+      <p style="font-size:13px;color:var(--soft);margin-bottom:20px;line-height:1.6;">Takes about 2–3 minutes. Answer honestly for the most accurate guidance.</p>
+      <button class="btn-next" style="width:100%" onclick="startSurvey()">Begin Today's Check-in →</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ SURVEY ACTIVE ══════════════ -->
+  <div id="survey-active" class="page">
+    <div class="step-dots" id="step-dots"></div>
+    <div class="progress-wrap">
+      <div class="progress-labels">
+        <span id="progress-label">Question 1 of 7</span>
+        <span id="progress-pct">0%</span>
+      </div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-bar"></div></div>
+    </div>
+    <div id="question-area"></div>
+  </div>
+
+  <!-- ══════════════ RESULT ══════════════ -->
+  <div id="result" class="page"></div>
+
+  <!-- ══════════════ HISTORY ══════════════ -->
+  <div id="history" class="page">
+    <div class="history-header">
+      <div class="hero-badge">📋 Your Health Log</div>
+      <h2>Previous Check-ins</h2>
+      <p>Enter the email you used during your daily check-ins to view your wound healing history.</p>
+    </div>
+    <div id="history-login" class="login-card">
+      <h3>Sign in with your email</h3>
+      <p>We'll retrieve all daily logs linked to this address from your device.</p>
+      <div class="email-wrap">
+        <span class="email-icon">📧</span>
+        <input type="email" id="history-email-input" placeholder="your@email.com" />
+      </div>
+      <p class="val-err" id="err-history-email" style="display:none;margin-top:8px">Please enter a valid email address.</p>
+      <button class="btn-next" style="width:100%;margin-top:16px" onclick="loadHistory()">View My Logs →</button>
+    </div>
+    <div id="history-entries" style="display:none;margin-top:28px;"></div>
+  </div>
+
+</div>
+
+<script>
+// ─── SURVEY STEPS ────────────────────────────────────────────
+const STEPS = [
+  {
+    id: 'email', section: 'Daily Log', type: 'email',
+    title: 'Enter your email to log today\'s results',
+    hint: 'Your result will be saved and viewable later under "View History".'
+  },
+  {
+    id: 'bandage_color', section: 'Bandage Observation', type: 'color_mcq',
+    title: 'What color is your ChameleonCare bandage right now?',
+    hint: 'Turmeric in the bandage shifts from yellow → darker shades when it detects infection-related pH changes.',
+    options: [
+      { label: 'Bright yellow / unchanged', value: 0, hex: '#F5C842' },
+      { label: 'Light yellow-orange', value: 1, hex: '#E8A020' },
+      { label: 'Orange-brown / darkened', value: 2, hex: '#C05A10' },
+      { label: 'Dark brown / very dark', value: 3, hex: '#7B3A0A' },
+      { label: 'Unusual color (green, blue, black)', value: 4, hex: '#2D5A3D' }
+    ]
+  },
+  {
+    id: 'wound_appearance', section: 'Wound Appearance', type: 'mcq',
+    title: 'How does the wound area look right now?',
+    hint: 'Choose the description that best matches what you see.',
+    options: [
+      { label: 'Clean, healing well — edges closing nicely', value: 0 },
+      { label: 'Slightly red around the edges', value: 1 },
+      { label: 'Swollen and noticeably red', value: 2 },
+      { label: 'Discharge present (clear / yellow / green)', value: 3 },
+      { label: 'Open, bleeding, or dark/black tissue', value: 4 }
+    ]
+  },
+  {
+    id: 'symptoms', section: 'Physical Symptoms', type: 'multi',
+    title: 'Are you experiencing any of the following?',
+    hint: 'Select all that apply.',
+    options: [
+      { label: 'Pain or tenderness at wound site', value: 'pain' },
+      { label: 'Warmth around the wound', value: 'warmth' },
+      { label: 'Fever (above 38°C / 100.4°F)', value: 'fever' },
+      { label: 'Foul smell from the wound', value: 'smell' },
+      { label: 'Fatigue or general unwellness', value: 'fatigue' },
+      { label: 'None of the above', value: 'none' }
+    ]
+  },
+  {
+    id: 'pain_level', section: 'Pain Assessment', type: 'scale',
+    title: 'Rate your pain level today',
+    hint: '0 = No pain at all &nbsp;·&nbsp; 10 = Worst pain imaginable',
+    min: 0, max: 10
+  },
+  {
+    id: 'wellbeing', section: 'Overall Wellbeing', type: 'mcq',
+    title: 'How are you feeling overall today?',
+    hint: 'Consider your energy, mood, and general health.',
+    options: [
+      { label: 'Feeling great — no concerns', value: 0 },
+      { label: 'Feeling okay — minor discomfort', value: 1 },
+      { label: 'Feeling unwell — noticeable symptoms', value: 2 },
+      { label: 'Feeling quite sick — significant discomfort', value: 3 }
+    ]
+  },
+  {
+    id: 'feedback', section: 'Additional Notes', type: 'textarea',
+    title: 'Any additional observations or concerns?',
+    hint: 'Share anything else about your wound, bandage, or how you\'re feeling.',
+    placeholder: 'e.g. "Noticed swelling started yesterday", "Bandage feels tight", "Had a small fall near the wound"…'
+  }
+];
+
+let currentStep = 0;
+let answers = {};
+
+// ─── NAVIGATION ─────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('tab-survey').classList.toggle('active', id === 'survey-landing' || id === 'survey-active' || id === 'result');
+  document.getElementById('tab-history').classList.toggle('active', id === 'history');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function startSurvey() {
+  currentStep = 0; answers = {};
+  showPage('survey-active');
+  buildDots(); renderStep();
+}
+
+// ─── PROGRESS ───────────────────────────────────────────────
+function buildDots() {
+  document.getElementById('step-dots').innerHTML = STEPS.map((_, i) => `<div class="step-dot" id="dot-${i}"></div>`).join('');
+}
+function updateProgress() {
+  const pct = Math.round((currentStep / STEPS.length) * 100);
+  document.getElementById('prog-bar').style.width = pct + '%';
+  document.getElementById('progress-pct').textContent = pct + '%';
+  document.getElementById('progress-label').textContent = `Question ${currentStep + 1} of ${STEPS.length}`;
+  STEPS.forEach((_, i) => {
+    document.getElementById(`dot-${i}`).className = 'step-dot' + (i === currentStep ? ' active' : i < currentStep ? ' done' : '');
+  });
+}
+
+// ─── RENDER STEP ────────────────────────────────────────────
+function renderStep() {
+  updateProgress();
+  const step = STEPS[currentStep];
+  let inputHTML = '';
+
+  if (step.type === 'email') {
+    inputHTML = `<div class="email-wrap"><span class="email-icon">📧</span><input type="email" id="input-email" placeholder="your@email.com" value="${answers[step.id] || ''}" /></div><p class="val-err" id="err-email">Please enter a valid email address.</p>`;
+  } else if (step.type === 'color_mcq') {
+    inputHTML = `<div class="options">${step.options.map((o, i) => `<button class="option ${answers[step.id] === i ? 'selected' : ''}" onclick="selectMCQ(${i})"><span class="option-dot"></span><span class="color-swatch" style="background:${o.hex}"></span><span>${o.label}</span></button>`).join('')}</div><p class="val-err" id="err-mcq">Please select an option.</p>`;
+  } else if (step.type === 'mcq') {
+    inputHTML = `<div class="options">${step.options.map((o, i) => `<button class="option ${answers[step.id] === i ? 'selected' : ''}" onclick="selectMCQ(${i})"><span class="option-dot"></span><span>${o.label}</span></button>`).join('')}</div><p class="val-err" id="err-mcq">Please select an option.</p>`;
+  } else if (step.type === 'multi') {
+    const sel = answers[step.id] || [];
+    inputHTML = `<div class="options">${step.options.map(o => `<button class="option multi ${sel.includes(o.value) ? 'selected' : ''}" onclick="toggleMulti('${o.value}')"><span class="option-check"></span><span>${o.label}</span></button>`).join('')}</div><p class="val-err" id="err-multi">Please select at least one option.</p>`;
+  } else if (step.type === 'scale') {
+    const sel = answers[step.id];
+    const btns = Array.from({length: step.max - step.min + 1}, (_, i) => i + step.min).map(i => `<button class="scale-btn ${sel === i ? 'selected' : ''}" onclick="selectScale(${i})">${i}</button>`).join('');
+    inputHTML = `<div><div class="scale-btns">${btns}</div><div class="scale-labels"><span>No pain</span><span>Moderate</span><span>Worst</span></div></div><p class="val-err" id="err-scale">Please select a pain level.</p>`;
+  } else if (step.type === 'textarea') {
+    inputHTML = `<textarea id="input-feedback" placeholder="${step.placeholder}">${answers[step.id] || ''}</textarea>`;
+  }
+
+  const isFirst = currentStep === 0, isLast = currentStep === STEPS.length - 1;
+  document.getElementById('question-area').innerHTML = `
+    <div class="card">
+      <div class="section-label">${step.section}</div>
+      <div class="question-title">${step.title}</div>
+      <div class="question-hint">${step.hint}</div>
+      ${inputHTML}
+      <div class="nav-buttons">
+        ${!isFirst ? `<button class="btn-back" onclick="goBack()">← Back</button>` : ''}
+        <button class="btn-next" onclick="goNext()">${isLast ? 'See My Results 🩺' : 'Next →'}</button>
+      </div>
+    </div>`;
+}
+
+function selectMCQ(idx) { answers[STEPS[currentStep].id] = idx; renderStep(); }
+function selectScale(val) { answers[STEPS[currentStep].id] = val; renderStep(); }
+function toggleMulti(val) {
+  const id = STEPS[currentStep].id;
+  let sel = answers[id] || [];
+  if (val === 'none') sel = sel.includes('none') ? [] : ['none'];
+  else { sel = sel.filter(v => v !== 'none'); sel.includes(val) ? (sel = sel.filter(v => v !== val)) : sel.push(val); }
+  answers[id] = sel;
+  renderStep();
+}
+
+function goNext() {
+  const step = STEPS[currentStep];
+  if (step.type === 'email') {
+    const val = document.getElementById('input-email').value.trim();
+    if (!val || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) { document.getElementById('err-email').style.display='block'; return; }
+    answers[step.id] = val;
+  } else if (step.type === 'mcq' || step.type === 'color_mcq') {
+    if (answers[step.id] === undefined) { document.getElementById('err-mcq').style.display='block'; return; }
+  } else if (step.type === 'multi') {
+    if (!answers[step.id] || !answers[step.id].length) { document.getElementById('err-multi').style.display='block'; return; }
+  } else if (step.type === 'scale') {
+    if (answers[step.id] === undefined) { document.getElementById('err-scale').style.display='block'; return; }
+  } else if (step.type === 'textarea') {
+    answers[step.id] = document.getElementById('input-feedback').value.trim();
+  }
+  if (currentStep < STEPS.length - 1) { currentStep++; renderStep(); window.scrollTo({top:0,behavior:'smooth'}); }
+  else { saveAndShowResult(); }
+}
+function goBack() { if (currentStep > 0) { currentStep--; renderStep(); window.scrollTo({top:0,behavior:'smooth'}); } }
+
+// ─── RISK SCORING ────────────────────────────────────────────
+function computeRisk() {
+  let score = 0;
+  score += (answers['bandage_color'] || 0) * 2.5;
+  score += (answers['wound_appearance'] || 0) * 2;
+  const syms = answers['symptoms'] || [];
+  if (syms.includes('fever')) score += 4;
+  if (syms.includes('smell')) score += 3;
+  if (syms.includes('warmth')) score += 2;
+  if (syms.includes('pain')) score += 1.5;
+  if (syms.includes('fatigue')) score += 1;
+  score += (answers['pain_level'] || 0) * 0.8;
+  score += (answers['wellbeing'] || 0) * 1.5;
+  return Math.round(score * 10) / 10;
+}
+
+function getLevel(score) {
+  if (score <= 5) return 'green';
+  if (score <= 14) return 'amber';
+  return 'red';
+}
+
+// ─── SAVE & RESULT ───────────────────────────────────────────
+function saveAndShowResult() {
+  const score = computeRisk();
+  const level = getLevel(score);
+  const email = answers['email'];
+  const entry = {
+    date: new Date().toISOString(),
+    score,
+    level,
+    answers: { ...answers }
+  };
+
+  // Save to localStorage keyed by email
+  const storageKey = 'cc_logs_' + email.toLowerCase().trim();
+  let logs = [];
+  try { logs = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+  logs.unshift(entry);
+  localStorage.setItem(storageKey, JSON.stringify(logs));
+
+  showResult(score, level, email);
+}
+
+function showResult(score, level, email) {
+  showPage('result');
+  const dateStr = new Date().toLocaleDateString('en-SG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const configs = {
+    green: {
+      icon: '✅', title: 'Looking Good — Keep It Up!',
+      msg: 'Your bandage and symptoms suggest your wound is healing well. No significant signs of infection at this time. Continue your current care routine.',
+      tips: ['Keep the wound area clean and dry', 'Change your ChameleonCare bandage as directed', 'Continue daily monitoring — note any color changes', 'Maintain a balanced diet to support healing', 'Next check-in: tomorrow at the same time']
+    },
+    amber: {
+      icon: '⚠️', title: 'Monitor Closely — Early Signs',
+      msg: 'Some indicators suggest early irritation or mild infection. Please take action now to prevent it from worsening.',
+      tips: ['Clean the wound gently with saline solution', 'Replace your bandage with a fresh one immediately', 'Avoid activities that strain or expose the wound', 'Watch for increasing redness, warmth, or discharge', 'If symptoms worsen within 24 hours, consult a doctor']
+    },
+    red: {
+      icon: '🚨', title: 'Seek Medical Attention Now',
+      msg: 'Your responses indicate significant signs of infection or serious wound complications. Do not delay — please contact a healthcare professional today.',
+      tips: ['⚕️ Visit a doctor, polyclinic, or A&E immediately', 'Do NOT attempt to self-treat a serious infection', 'Bring your bandage and today\'s survey results', 'Show the doctor the exact color change on the bandage', 'Fever above 38.5°C → go to A&E urgently']
+    }
+  };
+  const c = configs[level];
+  document.getElementById('result').innerHTML = `
+    <div class="hero" style="margin-bottom:24px">
+      <div class="hero-badge">Survey Complete — ${dateStr}</div>
+    </div>
+    <div class="result-card ${level}">
+      <div class="result-icon">${c.icon}</div>
+      <div class="result-title">${c.title}</div>
+      <div class="result-msg">${c.msg}</div>
+      <div class="result-tips">
+        <h4>${level === 'green' ? '✅ What to do' : level === 'amber' ? '⚠️ Recommended Actions' : '🚨 Urgent Steps'}</h4>
+        <ul>${c.tips.map(t => `<li>${t}</li>`).join('')}</ul>
+      </div>
+      ${email ? `<p style="font-size:13px;color:var(--soft);margin-top:8px">📧 Results logged for <strong>${email}</strong>. View them anytime under <strong>View History</strong>.</p>` : ''}
+      <div class="result-actions">
+        <button class="btn-restart" onclick="startSurvey()">↩ New Check-in</button>
+        <button class="btn-viewlog" onclick="prefillAndViewHistory('${email || ''}')">📋 View My History</button>
+      </div>
+    </div>
+    <div style="margin-top:18px;padding:18px;background:#fff;border-radius:var(--radius);border:1px solid var(--border);font-size:13px;color:var(--soft);line-height:1.7;">
+      <strong style="color:var(--charcoal)">⚕️ Disclaimer:</strong> ChameleonCare is a research tool and does not replace professional medical advice. Always consult a qualified healthcare provider for medical concerns.
+    </div>`;
+}
+
+function prefillAndViewHistory(email) {
+  showPage('history');
+  if (email) {
+    document.getElementById('history-email-input').value = email;
+    loadHistory();
+  }
+}
+
+// ─── HISTORY ─────────────────────────────────────────────────
+function loadHistory() {
+  const emailInput = document.getElementById('history-email-input').value.trim();
+  if (!emailInput || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput)) {
+    document.getElementById('err-history-email').style.display = 'block'; return;
+  }
+  document.getElementById('err-history-email').style.display = 'none';
+
+  const storageKey = 'cc_logs_' + emailInput.toLowerCase().trim();
+  let logs = [];
+  try { logs = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch(e) {}
+
+  const container = document.getElementById('history-entries');
+  container.style.display = 'block';
+
+  if (!logs.length) {
+    container.innerHTML = `<div class="empty-state"><div class="es-icon">📋</div><p>No check-ins found for <strong>${emailInput}</strong>. Complete your first daily check-in to start your log.</p></div>`;
+    return;
+  }
+
+  const colorLabels = ['Bright yellow / unchanged', 'Light yellow-orange', 'Orange-brown / darkened', 'Dark brown / very dark', 'Unusual color'];
+  const woundLabels = ['Clean, healing well', 'Slightly red edges', 'Swollen and red', 'Discharge present', 'Open / dark tissue'];
+  const wellLabels = ['Feeling great', 'Feeling okay', 'Feeling unwell', 'Feeling quite sick'];
+  const levelTitles = { green: '✅ Good — No Action Needed', amber: '⚠️ Monitor Closely', red: '🚨 Seek Medical Attention' };
+
+  container.innerHTML = `
+    <div style="font-size:13px;color:var(--soft);margin-bottom:16px;">Showing <strong>${logs.length}</strong> check-in${logs.length > 1 ? 's' : ''} for <strong>${emailInput}</strong></div>
+    ${logs.map((log, i) => {
+      const d = new Date(log.date);
+      const dateStr = d.toLocaleDateString('en-SG', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+      const timeStr = d.toLocaleTimeString('en-SG', { hour: '2-digit', minute: '2-digit' });
+      const syms = (log.answers.symptoms || []).filter(s => s !== 'none');
+      return `
+        <div class="log-entry">
+          <div class="log-entry-dot ${log.level}"></div>
+          <div class="log-entry-body">
+            <div class="log-entry-date">${dateStr} at ${timeStr}</div>
+            <div class="log-entry-title ${log.level}">${levelTitles[log.level]}</div>
+            <div class="log-entry-score">Risk score: ${log.score}</div>
+            <div class="log-detail" id="log-detail-${i}">
+              <dl>
+                <dt>Bandage Color</dt><dd>${colorLabels[log.answers.bandage_color] || '—'}</dd>
+                <dt>Wound Appearance</dt><dd>${woundLabels[log.answers.wound_appearance] || '—'}</dd>
+                <dt>Symptoms</dt><dd>${syms.length ? syms.join(', ') : 'None reported'}</dd>
+                <dt>Pain Level</dt><dd>${log.answers.pain_level !== undefined ? log.answers.pain_level + '/10' : '—'}</dd>
+                <dt>Overall Wellbeing</dt><dd>${wellLabels[log.answers.wellbeing] || '—'}</dd>
+                ${log.answers.feedback ? `<dt>Notes</dt><dd>${log.answers.feedback}</dd>` : ''}
+              </dl>
+            </div>
+          </div>
+          <button class="log-expand-btn" onclick="toggleDetail(${i})" title="Expand">▾</button>
+        </div>`;
+    }).join('')}`;
+}
+
+function toggleDetail(i) {
+  const el = document.getElementById(`log-detail-${i}`);
+  el.classList.toggle('open');
+}
+</script>
+</body>
+</html>
